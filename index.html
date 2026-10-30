@@ -382,36 +382,28 @@ body.expense-only-view #stay { display:none !important; }
 </script>
 
 
-<script>
-/* 將完整記帳本整合到導覽中的「記帳」分頁，避免使用者必須跳到頁面其他位置。 */
-(function(){
- function integrateLedger(){
-  const tab=document.getElementById('day-ledger');
-  const budget=document.getElementById('budget');
-  if(!tab||!budget||tab.dataset.ledgerIntegrated==='yes')return;
-  const card=budget.querySelector('.ledger-card');
-  if(!card)return;
-  // 將可新增、查看、刪除所有花費的完整記帳卡片移入「記帳」分頁。
-  card.classList.add('ledger-card-in-tab');
-  const note=tab.querySelector('.ledger-note');
-  if(note) note.insertAdjacentElement('afterend',card); else tab.appendChild(card);
-  // 原本頁面下方的預算區只作為資料來源容器，不再重複顯示。
-  budget.style.display='none';
-  budget.setAttribute('aria-hidden','true');
-  tab.dataset.ledgerIntegrated='yes';
- }
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',integrateLedger);else integrateLedger();
-})();
-</script>
+<script>// Legacy ledger integration disabled: the tab below now owns its standalone recording interface.</script>
 </body>
 
-<script>
-(function(){
- const days=[['11/03','Day 1'],['11/04','Day 2'],['11/05','Day 3'],['11/06','Day 4'],['11/07','Day 5'],['11/08','Day 6'],['11/09','Day 7']];
- const money=(n,c)=>(c==='CNY'?'¥':'NT$')+Number(n||0).toLocaleString('zh-TW',{maximumFractionDigits:2});
- function init(){const panel=document.getElementById('day-ledger');if(!panel)return;const budget=document.getElementById('budget');if(budget)budget.style.display='none';const actions=panel.querySelector('.ledger-actions');if(actions)actions.innerHTML='';const old=panel.querySelector('#expense-days');if(!old)return;old.innerHTML='';old.className='expense-summary-days';const total=panel.querySelector('.expense-grand-total');if(total)total.innerHTML='<span>七日總花費</span><div class="expense-total-pair"><div><small>人民幣</small><strong id="total-cny">¥0</strong></div><div><small>台幣合計（含人民幣換算）</small><strong id="total-twd">NT$0</strong></div></div>';days.forEach((d,i)=>{const card=document.createElement('div');card.className='expense-summary-day';card.innerHTML='<h4>'+d[0]+' <span>'+d[1]+'</span></h4><div class="expense-item-list" id="day'+(i+1)+'-items"><p class="expense-empty">尚未記錄花費</p></div><div class="expense-total-pair"><div><small>人民幣小計</small><strong id="day'+(i+1)+'-cny">¥0</strong></div><div><small>台幣合計（含換算）</small><strong id="day'+(i+1)+'-twd">NT$0</strong></div></div>';old.appendChild(card)});const note=panel.querySelector('.ledger-note');if(note)note.remove();const add=document.createElement('button');add.type='button';add.className='ledger-add';add.textContent='＋ 新增花費';add.style.margin='0 0 14px';add.addEventListener('click',()=>{const day=prompt('請輸入日期序號：\n1＝11/03，2＝11/04，3＝11/05，4＝11/06，5＝11/07，6＝11/08，7＝11/09','1');if(day===null)return;const d=Number(day);if(!Number.isInteger(d)||d<1||d>7){alert('請輸入 1 到 7。');return}const name=prompt('花費項目','餐飲');if(name===null||!name.trim())return;const currency=prompt('幣別：CNY＝人民幣，TWD＝台幣','CNY');if(currency===null)return;const c=currency.trim().toUpperCase();if(!['CNY','TWD'].includes(c)){alert('幣別請輸入 CNY 或 TWD。');return}const amount=prompt('請輸入金額','');if(amount===null||amount.trim()===''||!Number.isFinite(Number(amount))||Number(amount)<0){alert('請輸入有效金額。');return}if(typeof window.addTripExpense==='function'){window.addTripExpense(d,name.trim(),Number(amount),c);refresh()} });if(actions)actions.appendChild(add);else panel.querySelector('.day-title').after(add);refresh()}
- function refresh(){if(typeof tripData==='undefined')return;const expenses=tripData.expenses||[],fx=Number(tripData.fxRate)||4.933,sums=days.map(()=>({CNY:0,TWD:0}));expenses.forEach(x=>{const d=Number(x.day)-1;if(d>=0&&d<7&&['CNY','TWD'].includes(x.currency))sums[d][x.currency]+=Number(x.amount)||0});let totalCNY=0,totalTWD=0;sums.forEach((s,i)=>{totalCNY+=s.CNY;const totalDayTWD=s.TWD+s.CNY*fx;totalTWD+=totalDayTWD;const c=document.getElementById('day'+(i+1)+'-cny'),t=document.getElementById('day'+(i+1)+'-twd');if(c)c.textContent=money(s.CNY,'CNY');if(t)t.textContent=money(totalDayTWD,'TWD');const list=document.getElementById('day'+(i+1)+'-items');if(list){list.innerHTML='';const entries=expenses.filter(x=>Number(x.day)===i+1);if(!entries.length){const empty=document.createElement('p');empty.className='expense-empty';empty.textContent='尚未記錄花費';list.appendChild(empty)}else{entries.forEach(x=>{const row=document.createElement('div');row.className='expense-item-row';const name=document.createElement('span');name.className='expense-item-name';name.textContent=x.item||x.name||'花費';const amount=document.createElement('strong');amount.className='expense-item-amount';amount.textContent=money(x.amount,x.currency);row.append(name,amount);list.appendChild(row)})}}});const c=document.getElementById('total-cny'),t=document.getElementById('total-twd');if(c)c.textContent=money(totalCNY,'CNY');if(t)t.textContent=money(totalTWD,'TWD')}
- window.addEventListener('storage',refresh);document.addEventListener('trip-expenses-updated',refresh);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();window.refreshTripExpenseSummary=refresh;
-})();
-</script>
+<script>(function(){
+ const KEY='shanghai-hangzhou-ledger-ui-v2';
+ const DAYS=[['11/03','Day 1'],['11/04','Day 2'],['11/05','Day 3'],['11/06','Day 4'],['11/07','Day 5'],['11/08','Day 6'],['11/09','Day 7']];
+ const RATE=4.933;
+ const fmt=(n,c)=> (c==='CNY'?'¥':'NT$')+Number(n||0).toLocaleString('zh-TW',{maximumFractionDigits:2});
+ function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(x)?x:[]}catch(e){return []}}
+ function save(items){try{localStorage.setItem(KEY,JSON.stringify(items));return true}catch(e){alert('瀏覽器無法儲存資料，請確認不是以無痕模式開啟。');return false}}
+ function init(){
+  const tab=document.getElementById('day-ledger');if(!tab||tab.dataset.ledgerUiReady==='yes')return;tab.dataset.ledgerUiReady='yes';
+  // Keep only the recording interface in this tab; do not show summaries, notes, or the legacy ledger card.
+  tab.innerHTML='<div class="day-title"><h3>🧾 記帳</h3><span>記錄這趟旅程的所有花費</span></div><section class="ledger-card" id="ledger-ui-card"><h3>＋ 新增一筆花費</h3><form id="ledger-ui-form" class="expense-form ledger-form"><select id="ledger-ui-day" aria-label="日期"></select><input id="ledger-ui-item" maxlength="80" placeholder="項目，例如：晚餐" aria-label="花費項目" required><input id="ledger-ui-amount" type="number" min="0.01" step="0.01" placeholder="金額" aria-label="金額" required><select id="ledger-ui-currency" aria-label="幣別"><option value="CNY">CNY ¥ 人民幣</option><option value="TWD">TWD NT$ 台幣</option></select><button type="submit">記一筆</button></form><p id="ledger-ui-status" role="status" style="margin:8px 0;font-size:.85rem"></p><h3 style="margin:16px 0 8px">所有花費紀錄</h3><div id="ledger-ui-records"></div></section>';
+  const ds=document.getElementById('ledger-ui-day');DAYS.forEach((d,i)=>{const o=document.createElement('option');o.value=String(i+1);o.textContent=d[0]+'・'+d[1];ds.appendChild(o)});
+  const form=document.getElementById('ledger-ui-form');form.addEventListener('submit',function(e){e.preventDefault();e.stopPropagation();const day=Number(ds.value),item=document.getElementById('ledger-ui-item').value.trim(),amount=Number(document.getElementById('ledger-ui-amount').value),currency=document.getElementById('ledger-ui-currency').value;if(!item||!Number.isFinite(amount)||amount<=0){document.getElementById('ledger-ui-status').textContent='請輸入花費項目及大於 0 的金額。';return}const records=load();records.push({id:Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),day,item,amount,currency,createdAt:new Date().toISOString()});if(save(records)){form.reset();ds.value=String(day);document.getElementById('ledger-ui-status').textContent='已儲存這筆花費。';render();document.getElementById('ledger-ui-item').focus()}});
+  render();
+ }
+ function render(){const host=document.getElementById('ledger-ui-records');if(!host)return;const records=load();host.innerHTML='';if(!records.length){const empty=document.createElement('p');empty.className='expense-empty';empty.textContent='目前尚無花費紀錄，新增後會顯示在這裡。';host.appendChild(empty);return}
+  DAYS.forEach((d,i)=>{const entries=records.filter(x=>Number(x.day)===i+1);if(!entries.length)return;const group=document.createElement('section');group.style.cssText='background:var(--paper);border:var(--line);border-radius:14px;padding:10px 12px;margin:10px 0';const title=document.createElement('h4');title.textContent=d[0]+'・'+d[1];title.style.margin='0 0 6px';group.appendChild(title);entries.forEach(x=>{const row=document.createElement('div');row.style.cssText='display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:8px 0;border-top:1px dashed #b9aaa0';const name=document.createElement('span');name.textContent=x.item;const val=document.createElement('strong');val.textContent=fmt(x.amount,x.currency);const del=document.createElement('button');del.type='button';del.textContent='刪除';del.style.cssText='border:2px solid var(--ink);border-radius:9px;background:var(--pink);padding:5px 9px;cursor:pointer;font-weight:bold';del.addEventListener('click',()=>{if(!confirm('確定刪除「'+x.item+'」這筆花費？'))return;const next=load().filter(y=>y.id!==x.id);if(save(next))render()});row.append(name,val,del);group.appendChild(row)});host.appendChild(group)});
+  const total=document.createElement('div');total.style.cssText='padding:12px;background:var(--yellow);border:var(--line);border-radius:14px;margin-top:12px;font-weight:bold';const cny=records.filter(x=>x.currency==='CNY').reduce((a,x)=>a+Number(x.amount),0),twd=records.filter(x=>x.currency==='TWD').reduce((a,x)=>a+Number(x.amount),0);total.textContent='總花費：人民幣 '+fmt(cny,'CNY')+'；台幣合計（含人民幣換算）：'+fmt(twd+cny*RATE,'TWD');host.appendChild(total)
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();</script>
 </html> 
